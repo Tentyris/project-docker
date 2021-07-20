@@ -1,0 +1,51 @@
+version: '3'
+services:
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin-Docker
+    depends_on:
+      - database
+    ports:
+      - 8888:80
+    environment:
+      - PMA_ARBITRARY=1
+
+    database:
+    image: mysql:5.7
+    container_name: mysql-Docker
+    ports:
+        - "3307:3306"
+    environment:
+        MYSQL_DATABASE: mvcdocker2
+        MYSQL_ROOT_PASSWORD: password
+        MYSQL_USER: root
+        MYSQL_PASSWORD: password
+    volumes:
+        - ./db_data:/var/lib/mysql
+        - ./www/jclm_database.sql:/docker-entrypoint-initdb.d/0_init.sql
+    restart: always
+
+    web:
+    build: site
+    container_name: apache-Docker
+    ports:
+        - "8080:80"
+    volumes:
+        - ./www:/var/www/html/
+        - ./server/000-default.conf:/etc/apache2/sites-available/000-default.conf
+        - ./server/apache2.conf:/etc/apache2/apache2.conf
+        - ./server/php.ini:/usr/local/etc/php/php.ini
+    depends_on:
+        - database
+
+  node:
+    image: node:14
+    container_name: node-Docker
+    volumes:
+      - ./www/public:/var/www/html/public/
+      - ./www/package.json:/var/www/html/package.json
+    working_dir: /var/www/html/
+    command:
+      - /bin/sh
+      - '-c'
+      - 'npm install && npm run sass'
